@@ -29,7 +29,7 @@ const envelopesRouter = require("./routes/envelopes");
 app.use("/envelopes", envelopesRouter);
 
 app.use((req, res, next) => {
-  next(createError(404));
+  next(createError(404, "Route not found"));
 });
 
 app.use((err, req, res, next) => {
