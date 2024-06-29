@@ -29,7 +29,7 @@ const validateData = (req, res, next) => {
 
   req.body = {
     title: payload.title,
-    amount: payload.amount,
+    amount: Number(payload.amount),
   };
 
   next();
@@ -53,15 +53,18 @@ envelopesRouter.get("/", (req, res, next) => {
 });
 
 envelopesRouter.param("id", (req, res, next) => {
+  req.params.id = Number(req.params.id);
+
   if (envelopesData.length === 0) return next(createError(404));
 
-  const envelope = envelopesData.find(
-    (envelope) => envelope.id == req.params.id
+  const envelopeIndex = envelopesData.findIndex(
+    (envelope) => envelope.id === req.params.id
   );
 
-  if (!envelope) return next(createError(404));
-  req.envelopeId = envelope.id;
-  req.envelope = envelope;
+  if (envelopeIndex < 0) return next(createError(404));
+
+  req.envelopeIndex = envelopeIndex;
+  req.envelope = envelopesData[envelopeIndex];
   next();
 });
 
