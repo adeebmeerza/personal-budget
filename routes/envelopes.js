@@ -37,4 +37,8 @@ envelopesRouter.post("/", validateData, (req, res, next) => {
   res.send(newEnvelope);
 });
 
+envelopesRouter.get("/", (req, res, next) => {
+  res.send(envelopesData);
+});
+
 module.exports = envelopesRouter;
