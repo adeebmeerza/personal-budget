@@ -5,12 +5,12 @@ const createError = require("http-errors");
 const envelopesData = [
   {
     id: 1,
-    name: "bills",
+    title: "bills",
     amount: 150,
   },
   {
     id: 2,
-    name: "house",
+    title: "house",
     amount: 1400,
   },
 ];
@@ -66,6 +66,12 @@ envelopesRouter.param("id", (req, res, next) => {
 });
 
 envelopesRouter.get("/:id", (req, res, next) => {
+  res.send(req.envelope);
+});
+
+envelopesRouter.put("/:id", validateData, (req, res, next) => {
+  const updateEnvelopePayload = { ...req.envelope, ...req.body };
+  req.envelope = updateEnvelopePayload;
   res.send(req.envelope);
 });
 
