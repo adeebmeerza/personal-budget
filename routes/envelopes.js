@@ -78,4 +78,11 @@ envelopesRouter.put("/:id", validateData, (req, res, next) => {
   res.send(req.envelope);
 });
 
+envelopesRouter.delete("/:id", (req, res, next) => {
+  const deletedEnvelope = envelopesData.splice(req.envelopeIndex, 1);
+  if (deletedEnvelope.length === 0)
+    return next(createError(500, "envelope was found but failed to delete"));
+  res.sendStatus(204);
+});
+
 module.exports = envelopesRouter;
