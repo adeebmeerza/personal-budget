@@ -25,6 +25,9 @@ app.use("/healthcheck", (req, res, next) => {
   }
 });
 
+const envelopesRouter = require("./routes/envelopes");
+app.use("/envelopes", envelopesRouter);
+
 app.use((req, res, next) => {
   next(createError(404));
 });
