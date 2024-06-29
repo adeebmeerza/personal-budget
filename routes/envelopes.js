@@ -2,11 +2,22 @@ const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
 
-const envelopesData = [];
+const envelopesData = [
+  {
+    id: 1,
+    name: "bills",
+    amount: 150,
+  },
+  {
+    id: 2,
+    name: "house",
+    amount: 1400,
+  },
+];
+
 let lastEnvelopeId = 1;
 
 const validateData = (req, res, next) => {
-  console.log("body", req.body);
   const payload = req.body;
   if (
     payload.title === null ||
@@ -39,6 +50,23 @@ envelopesRouter.post("/", validateData, (req, res, next) => {
 
 envelopesRouter.get("/", (req, res, next) => {
   res.send(envelopesData);
+});
+
+envelopesRouter.param("id", (req, res, next) => {
+  if (envelopesData.length === 0) return next(createError(404));
+
+  const envelope = envelopesData.find(
+    (envelope) => envelope.id == req.params.id
+  );
+
+  if (!envelope) return next(createError(404));
+  req.envelopeId = envelope.id;
+  req.envelope = envelope;
+  next();
+});
+
+envelopesRouter.get("/:id", (req, res, next) => {
+  res.send(req.envelope);
 });
 
 module.exports = envelopesRouter;
