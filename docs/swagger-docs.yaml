@@ -1,0 +1,198 @@
+openapi: 3.0.1
+info:
+  title: Personal Budget
+  description: |-
+    Budget your expenses using Envelope method. Allocate an amount of money to each envelope based on financial priorities and needs.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: envelope
+    description: Allocate budget envelopes
+paths:
+  /envelopes:
+    post:
+      tags: 
+      - envelope
+      operationId: addEnvelope
+      summary: Add a new budget envelope
+      description: Add a new budget envelope
+      requestBody:
+        description: Create a new budget envelope
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '400':
+          description: Invalid input
+    get:
+      tags:
+        - envelope
+      operationId: getEnvelopes
+      summary: List all budget envelopes
+      description: Returns all envelopes details including amount of budget
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: '#/components/schemas/Envelope'
+  /envelopes/{id}:
+    get:
+      tags:
+        - envelope
+      operationId: getEnvelopeById
+      summary: Get a budget envelope
+      description: Returns an envelope details including amount of money budgetted
+      parameters:
+        - name: id
+          in: path
+          description: Id of the envelope to return
+          required: true
+          schema: 
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '400':
+          description: Invalid input
+        '404':
+          description: Envelope not found
+    put:
+      tags:
+        - envelope
+      summary: Update an existing envelope
+      description: Update an existing envelope by Id
+      operationId: updateEnvelope
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Update an existing budget envelope
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Envelope'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '400':
+          description: Invalid input
+        '404':
+          description: Envelope not found
+    delete:
+      tags:
+        - envelope
+      summary: Delete an existing envelope
+      description: Delete an existing envelope by Id
+      operationId: deleteEnvelope
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Invalid input
+        '404':
+          description: Envelope not found
+  /envelopes/{id}/transfer/{toId}:
+    post:
+      tags:
+        - envelope
+      operationId: transferEnvelopeBudget
+      summary: Transfer budget
+      description: Transfer an amount of budget from an envelope to another envelope
+      parameters:
+        - name: id
+          in: path
+          description: Id of envelope to transfer from
+          required: true
+          schema: 
+            type: integer
+            format: int64
+        - name: toId
+          in: path
+          description: Id of envelope to transfer to
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transferAmount:
+                  type: number
+                  format: currency
+                  example: 50
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newBalance:
+                    type: object
+                    properties:
+                      from:
+                        type: number
+                        format: currency
+                        example: 50
+                      to:
+                        type: number
+                        format: currency
+                        example: 150
+        '400':
+          description: Invalid input
+        '404':
+          description: Envelope not found / To envelope not found
+components:
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        id: 
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          description: Envelope name
+        budget:
+          type: number
+          description: amount of money budgetted for this envelope
+          format: currency
+          example: 10.00
