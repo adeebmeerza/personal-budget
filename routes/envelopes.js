@@ -1,17 +1,18 @@
 const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
+const db = require("../db/index.db");
 
 const envelopesData = [
   {
     id: 1,
     title: "bills",
-    amount: 150,
+    budget: 150,
   },
   {
     id: 2,
     title: "house",
-    amount: 1400,
+    budget: 1400,
   },
 ];
 
@@ -21,31 +22,32 @@ const validateData = (req, res, next) => {
   const payload = req.body;
   if (
     payload.title === null ||
-    payload.amount === null ||
+    payload.title === "" ||
+    payload.budget === null ||
+    payload.title === "" ||
     typeof payload.title !== "string" ||
-    typeof payload.amount !== "number"
+    typeof payload.budget !== "number"
   )
     next(createError(400));
 
   req.body = {
     title: payload.title,
-    amount: Number(payload.amount),
+    budget: Number(payload.budget),
   };
 
   next();
 };
 
-envelopesRouter.post("/", validateData, (req, res, next) => {
-  const id = lastEnvelopeId;
-  lastEnvelopeId++;
+envelopesRouter.post("/", validateData, async (req, res, next) => {
+  const payload = req.body;
 
-  const newEnvelope = {
-    id: id,
-    ...req.body,
-  };
+  const result = await db.query(
+    "INSERT INTO envelopes (title, budget) VALUES ($1, $2) RETURNING *",
+    [payload.title, payload.budget]
+  );
+  const newEnvelope = result.rows[0];
 
-  envelopesData.push(newEnvelope);
-  res.send(newEnvelope);
+  res.json(newEnvelope);
 });
 
 envelopesRouter.get("/", (req, res, next) => {

@@ -3,8 +3,6 @@ const logger = require("morgan");
 const bodyParser = require("body-parser");
 const createError = require("http-errors");
 
-const PORT = process.env.port || 3000;
-
 const app = express();
 
 app.use(logger("dev"));
@@ -36,10 +34,6 @@ app.use((err, req, res, next) => {
   if (err.status >= 500) console.log(err);
   res.status(err.status || 500);
   res.send(err.message);
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
 });
 
 module.exports = app;
