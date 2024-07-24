@@ -61,22 +61,20 @@ envelopesRouter.get("/", async (req, res, next) => {
   }
 });
 
-envelopesRouter.param("id", (req, res, next, id) => {
+envelopesRouter.param("id", async (req, res, next, id) => {
   const numericId = Number(id);
   if (isNaN(numericId)) return next(createError(400));
+  req.id = numericId;
 
-  if (envelopesData.length === 0) return next(createError(404));
-
-  const envelopeIndex = envelopesData.findIndex(
-    (envelope) => envelope.id === numericId
-  );
-
-  if (envelopeIndex < 0) return next(createError(404, "Envelope not found"));
-
-  req.envelopeIndex = envelopeIndex;
-  req.envelope = envelopesData[envelopeIndex];
-
-  next();
+  try {
+    const envelope = await Envelope.findByPk(numericId);
+    req.envelope = envelope
+      ? envelope
+      : next(createError(404, "Envelope not found"));
+    next();
+  } catch (error) {
+    next(createError(404, "Envelope not found"));
+  }
 });
 
 envelopesRouter.param("fromId", (req, res, next, fromId) => {
@@ -119,8 +117,8 @@ const transferRouter = express.Router({ mergeParams: true });
 envelopesRouter.use("/:fromId/transfer", transferRouter); // register transfer nested route in envelope route
 
 transferRouter.param("toId", (req, res, next, toId) => {
-  const numericId = Number(toId);
-  if (isNaN(numericId)) return next(createError(404));
+  const numericId = Number(id);
+  if (isNaN(numericId)) return next(createError(400));
 
   const toEnvelopeIndex = envelopesData.findIndex(
     (envelope) => envelope.id === numericId

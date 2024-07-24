@@ -96,4 +96,39 @@ describe("Envelope", () => {
       expect(response.body).toStrictEqual([]);
     });
   });
+
+  describe("Get An Envelope", () => {
+    const payload = { title: "Grocery", budget: 200.0 };
+
+    let envelope;
+    beforeAll(async () => {
+      envelope = await Envelope.create(payload);
+    });
+
+    it("returns a specific envelope by id", async () => {
+      const expected = { statusCode: 200, payload };
+
+      const response = await request(app).get(`/envelopes/${envelope.id}`);
+
+      expect(response.status).toBe(expected.statusCode);
+      expect(response.body).toMatchObject(expected.payload);
+    });
+
+    it("throws error 400 if id input is not a number", async () => {
+      const expected = { statusCode: 400 };
+
+      const response = await request(app).get(`/envelopes/abc`);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 404 if not found", async () => {
+      await Envelope.truncate();
+      const expected = { statusCode: 404 };
+
+      const response = await request(app).get(`/envelopes/${envelope.id}`);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+  });
 });
