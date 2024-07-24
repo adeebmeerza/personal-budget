@@ -23,15 +23,15 @@ app.use("/healthcheck", (req, res, next) => {
   }
 });
 
-const envelopesRouter = require("./routes/envelopes");
-app.use("/envelopes", envelopesRouter);
+const envelopesRouter = require("./envelopes/envelopes.routes");
 
+app.use("/envelopes", envelopesRouter); // envelope route
 app.use((req, res, next) => {
   next(createError(404, "Route not found"));
-});
+}); // route not found
 
+// global error handler
 app.use((err, req, res, next) => {
-  if (err.status >= 500) console.log(err);
   res.status(err.status || 500);
   res.send(err.message);
 });

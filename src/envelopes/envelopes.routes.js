@@ -1,7 +1,7 @@
 const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
-const db = require("../db/index.db");
+const Envelope = require("./envelopes.model");
 
 const envelopesData = [
   {
@@ -41,17 +41,24 @@ const validateData = (req, res, next) => {
 envelopesRouter.post("/", validateData, async (req, res, next) => {
   const payload = req.body;
 
-  const result = await db.query(
-    "INSERT INTO envelopes (title, budget) VALUES ($1, $2) RETURNING *",
-    [payload.title, payload.budget]
-  );
-  const newEnvelope = result.rows[0];
+  try {
+    // console.log("creating envelope...");
+    const newEnvelope = await Envelope.create(payload);
+    // console.log("newEnvelope:", newEnvelope);
 
-  res.json(newEnvelope);
+    res.json(newEnvelope);
+  } catch (error) {
+    next(error);
+  }
 });
 
-envelopesRouter.get("/", (req, res, next) => {
-  res.send(envelopesData);
+envelopesRouter.get("/", async (req, res, next) => {
+  try {
+    const envelopes = await Envelope.findAll();
+    res.send(envelopes);
+  } catch (error) {
+    next(error);
+  }
 });
 
 envelopesRouter.param("id", (req, res, next, id) => {
