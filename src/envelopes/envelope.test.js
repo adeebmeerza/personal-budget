@@ -85,7 +85,6 @@ describe("Envelope", () => {
       const expected = { statusCode: 200, payloads };
 
       const response = await request(app).get("/envelopes");
-      // console.log("actual", response);
 
       expect(response.status).toBe(expected.statusCode);
       expect(response.body).toMatchObject(expected.payloads);
@@ -211,7 +210,6 @@ describe("Envelope", () => {
         errors: ["Budget must be a number."],
       };
 
-      console.log(envelope.id);
       const response = await request(app)
         .patch(`/envelopes/${envelope.id}`)
         .send(updatePayload);
