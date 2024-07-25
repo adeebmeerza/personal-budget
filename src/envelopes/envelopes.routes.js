@@ -43,9 +43,7 @@ envelopesRouter.post("/", validateData, async (req, res, next) => {
   const payload = req.body;
 
   try {
-    // console.log("creating envelope...");
     const newEnvelope = await Envelope.create(payload);
-    // console.log("newEnvelope:", newEnvelope);
 
     res.json(newEnvelope);
   } catch (error) {
@@ -69,7 +67,7 @@ envelopesRouter.param("id", async (req, res, next, id) => {
 
   try {
     const envelope = await Envelope.findByPk(numericId);
-    console.log("envelope in route", envelope);
+
     req.envelope = envelope || next(createError(404, "Envelope not found"));
     next();
   } catch (error) {
@@ -115,7 +113,6 @@ const validateUpdateData = (req, res, next) => {
   }
 
   if (errors.length > 0) {
-    console.log(errors);
     return next(createError(400, { errors }));
   } else {
     next();
