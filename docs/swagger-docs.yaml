@@ -71,7 +71,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '400':
-          description: Invalid input
+          description: Invalid envelope id given
         '404':
           description: Envelope not found
     patch:
@@ -101,7 +101,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '400':
-          description: Title must be a non-empty string / Budget must be a number
+          description: Invalid envelope id given / Title must be a non-empty string / Budget must be a number
         '404':
           description: Envelope not found
     delete:
@@ -121,7 +121,7 @@ paths:
         '204':
           description: Successful operation
         '400':
-          description: Invalid input
+          description: Invalid envelope id given
         '404':
           description: Envelope not found
   /envelopes/{id}/transfer-budget/{toId}:
@@ -176,7 +176,7 @@ paths:
                         format: currency
                         example: 150
         '400':
-          description: Invalid input
+          description: Invalid envelope id given
         '404':
           description: Envelope not found / To envelope not found
 components:

@@ -62,7 +62,8 @@ envelopesRouter.get("/", async (req, res, next) => {
 
 envelopesRouter.param("id", async (req, res, next, id) => {
   const numericId = Number(id);
-  if (isNaN(numericId)) return next(createError(400));
+  if (isNaN(numericId))
+    return next(createError(400, "Invalid envelope id given"));
   req.id = numericId;
 
   try {
@@ -131,11 +132,13 @@ envelopesRouter.patch("/:id", validateUpdateData, async (req, res, next) => {
   }
 });
 
-envelopesRouter.delete("/:id", (req, res, next) => {
-  const deletedEnvelope = envelopesData.splice(req.envelopeIndex, 1);
-  if (deletedEnvelope.length === 0)
-    return next(createError(500, "Envelope was found but failed to delete"));
-  res.sendStatus(204);
+envelopesRouter.delete("/:id", async (req, res, next) => {
+  try {
+    await Envelope.destroy({ where: { id: req.id } });
+    res.sendStatus(204);
+  } catch (error) {
+    next(error);
+  }
 });
 
 /** Transfer route */

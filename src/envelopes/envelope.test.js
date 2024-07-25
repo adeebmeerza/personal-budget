@@ -141,16 +141,16 @@ describe("Envelope", () => {
   });
 
   describe("Update an envelope", () => {
-    afterAll(async () => {
-      await Envelope.destroy({ truncate: true });
-    });
-
+    let envelope;
     const payload = { title: "Bills", budget: 50.0 };
     const updatePayload = { budget: 150 };
 
-    let envelope;
     beforeAll(async () => {
       envelope = await Envelope.create(payload);
+    });
+
+    afterAll(async () => {
+      await Envelope.destroy({ truncate: true });
     });
 
     it("update the details of the specific envelope and returns the new details", async () => {
@@ -181,8 +181,6 @@ describe("Envelope", () => {
         errors: ["Title must be a non-empty string."],
       };
 
-      console.log("envelope: ", envelope);
-      console.log("envelope.id: ", envelope.id);
       const response = await request(app)
         .patch(`/envelopes/${envelope.id}`)
         .send(updatePayload);
@@ -228,6 +226,44 @@ describe("Envelope", () => {
       const response = await request(app)
         .patch(`/envelopes/999`)
         .send(updatePayload);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+  });
+
+  describe("Delete an envelope", () => {
+    let envelope;
+    const payload = { title: "Bills", budget: 50.0 };
+
+    beforeAll(async () => {
+      envelope = await Envelope.create(payload);
+    });
+
+    afterAll(async () => {
+      await Envelope.destroy({ truncate: true });
+    });
+
+    it("delete the envelope by id", async () => {
+      const expected = { statusCode: 204 };
+
+      const response = await request(app).delete(`/envelopes/${envelope.id}`);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 400 if id input is not a number", async () => {
+      const expected = { statusCode: 400 };
+
+      const response = await request(app).delete("/envelopes/abc");
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 404 if the envelope with given id not found", async () => {
+      await Envelope.truncate();
+      const expected = { statusCode: 404 };
+
+      const response = await request(app).delete(`/envelopes/999`);
 
       expect(response.status).toBe(expected.statusCode);
     });
