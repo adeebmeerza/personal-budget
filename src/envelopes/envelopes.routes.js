@@ -2,22 +2,7 @@ const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
 const Envelope = require("./envelopes.model");
-const { where } = require("sequelize");
-
-const envelopesData = [
-  {
-    id: 1,
-    title: "bills",
-    budget: 150,
-  },
-  {
-    id: 2,
-    title: "house",
-    budget: 1400,
-  },
-];
-
-let lastEnvelopeId = 1;
+const db = require("../db");
 
 const validateData = (req, res, next) => {
   const payload = req.body;
@@ -61,36 +46,23 @@ envelopesRouter.get("/", async (req, res, next) => {
 });
 
 envelopesRouter.param("id", async (req, res, next, id) => {
-  const numericId = Number(id);
-  if (isNaN(numericId))
-    return next(createError(400, "Invalid envelope id given"));
-  req.id = numericId;
-
   try {
+    const numericId = Number(id);
+    if (isNaN(numericId))
+      return next(createError(400, "Invalid envelope id given"));
+
     const envelope = await Envelope.findByPk(numericId);
 
-    req.envelope = envelope || next(createError(404, "Envelope not found"));
+    if (!envelope) {
+      return next(createError(404, "Envelope not found"));
+    }
+    req.envelope = envelope;
+    req.id = numericId;
+
     next();
   } catch (error) {
     next(createError(404, "Envelope not found"));
   }
-});
-
-envelopesRouter.param("fromId", (req, res, next, fromId) => {
-  const numericId = Number(fromId);
-  if (isNaN(numericId)) return next(createError(404));
-
-  const fromEnvelopeIndex = envelopesData.findIndex(
-    (envelope) => envelope.id === numericId
-  );
-
-  if (fromEnvelopeIndex === -1)
-    return next(createError(404, "From envelope not found"));
-
-  req.fromEnvelopeIndex = fromEnvelopeIndex;
-  req.fromEnvelope = envelopesData[fromEnvelopeIndex];
-
-  next();
 });
 
 envelopesRouter.get("/:id", (req, res, next) => {
@@ -144,55 +116,86 @@ envelopesRouter.delete("/:id", async (req, res, next) => {
 /** Transfer route */
 
 const transferRouter = express.Router({ mergeParams: true });
-envelopesRouter.use("/:fromId/transfer", transferRouter); // register transfer nested route in envelope route
+envelopesRouter.use("/:id/transfer-budget", transferRouter); // register transfer nested route in envelope route
 
-transferRouter.param("toId", (req, res, next, toId) => {
-  const numericId = Number(id);
-  if (isNaN(numericId)) return next(createError(400));
+transferRouter.param("toId", async (req, res, next, toId) => {
+  try {
+    const numericId = Number(toId);
+    if (isNaN(numericId))
+      return next(createError(400, "Invalid envelope id given"));
 
-  const toEnvelopeIndex = envelopesData.findIndex(
-    (envelope) => envelope.id === numericId
-  );
+    const envelope = await Envelope.findByPk(numericId);
+    console.log(envelope);
 
-  if (toEnvelopeIndex === -1)
-    return next(createError(404, "To envelope not found"));
+    if (!envelope) {
+      return next(createError(404, "Envelope not found"));
+    }
+    req.toEnvelope = envelope;
 
-  req.toEnvelopeIndex = toEnvelopeIndex;
-  req.toEnvelope = envelopesData[toEnvelopeIndex];
+    next();
+  } catch (error) {
+    next(createError(404, "To Envelope not found"));
+  }
+});
+
+const validateTransferAmount = (req, res, next) => {
+  const transferAmount = req.body.transferAmount;
+
+  // validate envelopes details
+  if (transferAmount === null || isNaN(transferAmount))
+    return next(createError(400, "Input must be number"));
+
+  // validate transfer amount to make sure enough to transfer
+  if (transferAmount > req.envelope.budget)
+    return next(createError(400, "Insufficient amount to transfer"));
+
+  req.transferAmount = transferAmount;
 
   next();
-});
+};
 
 transferRouter.post(
   "/:toId",
-  (req, res, next) => {
-    const transferAmount = req.body.transferAmount;
+  validateTransferAmount,
+  async (req, res, next) => {
+    try {
+      // subtract / add budget amount
+      req.envelope.budget = req.envelope.budget - req.transferAmount;
+      req.toEnvelope.budget = req.toEnvelope.budget + req.transferAmount;
 
-    // validate envelopes details
-    if (transferAmount === null || typeof transferAmount !== "number")
-      return next(createError(404, "Input must be number"));
+      const result = await db.transaction(async (t) => {
+        const updatedSourceEnvelope = await Envelope.update(
+          { budget: req.envelope.budget },
+          {
+            where: { id: req.envelope.id },
+            transaction: t,
+          }
+        );
 
-    // validate transfer amount to make sure enough to transfer
-    if (transferAmount > req.fromEnvelope.amount)
-      return next(createError(400, "Insufficient money to transfer"));
+        const updatedDestinationEnvelope = await Envelope.update(
+          { budget: req.toEnvelope.budget },
+          {
+            where: { id: req.envelope.id },
+            transaction: t,
+          }
+        );
 
-    req.transferAmount = transferAmount;
+        return { updatedSourceEnvelope, updatedDestinationEnvelope };
+      });
 
-    next();
-  },
-  (req, res, next) => {
-    // subtract / add budget amount
-    envelopesData[req.fromEnvelopeIndex].amount =
-      req.fromEnvelope.amount - req.transferAmount;
-    envelopesData[req.toEnvelopeIndex].amount =
-      req.toEnvelope.amount + req.transferAmount;
-
-    res.json({
-      newBalance: {
-        from: req.fromEnvelope.amount,
-        to: req.toEnvelope.amount,
-      },
-    });
+      if (
+        result.updatedSourceEnvelope[0] > 0 &&
+        result.updatedDestinationEnvelope[0] > 0
+      )
+        res.json({
+          newBalance: {
+            from: req.envelope.budget,
+            to: req.toEnvelope.budget,
+          },
+        });
+    } catch (error) {
+      next(createError(500, `Transaction failed: ${error}`));
+    }
   }
 );
 

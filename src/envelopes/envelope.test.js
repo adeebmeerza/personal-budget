@@ -266,4 +266,111 @@ describe("Envelope", () => {
       expect(response.status).toBe(expected.statusCode);
     });
   });
+
+  describe("Transfer budget between envelopes", () => {
+    let envelopes;
+    beforeAll(async () => {
+      const envelopesData = [
+        { title: "Grocery", budget: 200.0 },
+        { title: "Entertainment", budget: 50.0 },
+      ];
+      envelopes = await Envelope.bulkCreate(envelopesData);
+    });
+
+    afterAll(async () => {
+      await Envelope.truncate();
+    });
+
+    const payload = { transferAmount: 50 };
+
+    it("returns new balance of the involved envelopes", async () => {
+      const expected = {
+        statusCode: 200,
+        body: { newBalance: { from: 150, to: 100 } },
+      };
+
+      const response = await request(app)
+        .post(
+          `/envelopes/${envelopes[0].id}/transfer-budget/${envelopes[1].id}`
+        )
+        .send(payload);
+
+      expect(response.status).toBe(expected.statusCode);
+      expect(response.body).toMatchObject(expected.body);
+    });
+
+    it("throws error 400 if source envelope id is not a number", async () => {
+      const expected = { statusCode: 400 };
+
+      const response = await request(app)
+        .post(`/envelopes/not-num-id/transfer-budget/${envelopes[1].id}`)
+        .send(payload);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 400 if destination envelope id is not a number", async () => {
+      const expected = { statusCode: 400 };
+
+      const response = await request(app)
+        .post(`/envelopes/${envelopes[0].id}/transfer-budget/not-num-id`)
+        .send(payload);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 400 if transfer amount is not number", async () => {
+      const payload = { transferAmount: "not-a-number" };
+      const expected = { statusCode: 400 };
+
+      const response = await request(app)
+        .post(
+          `/envelopes/${envelopes[0].id}/transfer-budget/${envelopes[1].id}`
+        )
+        .send(payload);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 400 if source envelope would has insufficient budget amount", async () => {
+      const payload = { transferAmount: 200 };
+      const expected = { statusCode: 400 };
+
+      const response = await request(app)
+        .post(
+          `/envelopes/${envelopes[0].id}/transfer-budget/${envelopes[1].id}`
+        )
+        .send(payload);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 404 if the source envelope with given id not found", async () => {
+      await Envelope.truncate();
+      const notExistEnvelopeId = 999;
+      const expected = { statusCode: 404 };
+
+      const response = await request(app)
+        .post(
+          `/envelopes/${notExistEnvelopeId}/transfer-budget/${envelopes[1].id}`
+        )
+        .send(payload);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+
+    it("throws error 404 if the destination envelope with given id not found", async () => {
+      await Envelope.truncate();
+      const notExistEnvelopeId = 999;
+      const expected = { statusCode: 404 };
+
+      const response = await request(app)
+        .post(
+          `/envelopes/${envelopes[0].id}/transfer-budget/$${notExistEnvelopeId}`
+        )
+        .send(payload);
+
+      expect(response.status).toBe(expected.statusCode);
+    });
+  });
 });

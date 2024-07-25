@@ -154,7 +154,7 @@ paths:
               properties:
                 transferAmount:
                   type: number
-                  format: currency
+                  format: decimal
                   example: 50
       responses:
         '200':
@@ -169,14 +169,14 @@ paths:
                     properties:
                       from:
                         type: number
-                        format: currency
+                        format: decimal
                         example: 50
                       to:
                         type: number
-                        format: currency
+                        format: decimal
                         example: 150
         '400':
-          description: Invalid envelope id given
+          description: Invalid envelope id given / Invalid to envelope id given / Transfer amount must be number / Insuffucient budget amount to transfer
         '404':
           description: Envelope not found / To envelope not found
 components:
@@ -194,5 +194,5 @@ components:
         budget:
           type: number
           description: amount of money budgetted for this envelope
-          format: currency
+          format: decimal
           example: 10.00
