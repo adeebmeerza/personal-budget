@@ -2,6 +2,7 @@ const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
 const Envelope = require("./envelopes.model");
+const { where } = require("sequelize");
 
 const envelopesData = [
   {
@@ -24,7 +25,7 @@ const validateData = (req, res, next) => {
     payload.title === null ||
     payload.title === "" ||
     payload.budget === null ||
-    payload.title === "" ||
+    payload.budget === "" ||
     typeof payload.title !== "string" ||
     typeof payload.budget !== "number"
   )
@@ -68,9 +69,8 @@ envelopesRouter.param("id", async (req, res, next, id) => {
 
   try {
     const envelope = await Envelope.findByPk(numericId);
-    req.envelope = envelope
-      ? envelope
-      : next(createError(404, "Envelope not found"));
+    console.log("envelope in route", envelope);
+    req.envelope = envelope || next(createError(404, "Envelope not found"));
     next();
   } catch (error) {
     next(createError(404, "Envelope not found"));
@@ -98,10 +98,40 @@ envelopesRouter.get("/:id", (req, res, next) => {
   res.send(req.envelope);
 });
 
-envelopesRouter.put("/:id", validateData, (req, res, next) => {
+const validateUpdateData = (req, res, next) => {
+  const payload = req.body;
+  const errors = [];
+
+  if (
+    payload.title !== undefined &&
+    (typeof payload.title !== "string" ||
+      (typeof payload.title === "string" && payload.title.trim() === ""))
+  ) {
+    errors.push("Title must be a non-empty string.");
+  }
+
+  if (payload.budget !== undefined && isNaN(payload.budget)) {
+    errors.push("Budget must be a number.");
+  }
+
+  if (errors.length > 0) {
+    console.log(errors);
+    return next(createError(400, { errors }));
+  } else {
+    next();
+  }
+};
+
+envelopesRouter.patch("/:id", validateUpdateData, async (req, res, next) => {
   const updateEnvelopePayload = { ...req.envelope, ...req.body };
-  req.envelope = updateEnvelopePayload;
-  res.send(req.envelope);
+  try {
+    const updatedEnvelope = await Envelope.update(updateEnvelopePayload, {
+      where: { id: req.envelope.id },
+    });
+    res.send(updatedEnvelope[1]);
+  } catch (error) {
+    next(error);
+  }
 });
 
 envelopesRouter.delete("/:id", (req, res, next) => {
