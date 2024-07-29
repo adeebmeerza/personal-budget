@@ -1,7 +1,8 @@
 const request = require("supertest");
 const app = require("../src/app");
-const Envelope = require("../src/db/models/envelopes.model");
-const sequelize = require("../src/db/sequelize");
+const { Envelope } = require("../src/db/models");
+const { EnvelopeTransaction } = require("../src/db/models");
+const { sequelize } = require("../src/db/models");
 
 describe("Envelope", () => {
   afterAll(async () => {
@@ -10,7 +11,8 @@ describe("Envelope", () => {
 
   describe("Create a new envelope", () => {
     afterAll(async () => {
-      await Envelope.destroy({ truncate: true });
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
     });
 
     const payload = { title: "Grocery", budget: 200.0 };
@@ -72,7 +74,8 @@ describe("Envelope", () => {
 
   describe("List envelopes", () => {
     afterAll(async () => {
-      await Envelope.destroy({ truncate: true });
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
     });
 
     const payloads = [
@@ -91,7 +94,9 @@ describe("Envelope", () => {
     });
 
     it("returns empty array if no data found", async () => {
-      await Envelope.destroy({ truncate: true });
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
+
       const expected = { statusCode: 200, payloads };
 
       const response = await request(app).get("/envelopes");
@@ -102,7 +107,8 @@ describe("Envelope", () => {
 
   describe("Get An Envelope", () => {
     afterAll(async () => {
-      await Envelope.destroy({ truncate: true });
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
     });
 
     const payload = { title: "Grocery", budget: 200.0 };
@@ -130,7 +136,8 @@ describe("Envelope", () => {
     });
 
     it("throws error 404 if not found", async () => {
-      await Envelope.truncate();
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
       const expected = { statusCode: 404 };
 
       const response = await request(app).get(`/envelopes/${envelope.id}`);
@@ -149,7 +156,8 @@ describe("Envelope", () => {
     });
 
     afterAll(async () => {
-      await Envelope.destroy({ truncate: true });
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
     });
 
     it("update the details of the specific envelope and returns the new details", async () => {
@@ -218,7 +226,8 @@ describe("Envelope", () => {
     });
 
     it("throws error 404 if the envelope with id not found", async () => {
-      await Envelope.truncate();
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
       const expected = { statusCode: 404 };
 
       const response = await request(app)
@@ -238,7 +247,8 @@ describe("Envelope", () => {
     });
 
     afterAll(async () => {
-      await Envelope.destroy({ truncate: true });
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
     });
 
     it("delete the envelope by id", async () => {
@@ -258,7 +268,8 @@ describe("Envelope", () => {
     });
 
     it("throws error 404 if the envelope with given id not found", async () => {
-      await Envelope.truncate();
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
       const expected = { statusCode: 404 };
 
       const response = await request(app).delete(`/envelopes/999`);
@@ -278,7 +289,12 @@ describe("Envelope", () => {
     });
 
     afterAll(async () => {
-      await Envelope.truncate();
+      try {
+        await EnvelopeTransaction.destroy({ truncate: true });
+        await Envelope.destroy({ truncate: { cascade: true } });
+      } catch (error) {
+        console.log(error);
+      }
     });
 
     const payload = { transferAmount: 50 };
@@ -289,6 +305,8 @@ describe("Envelope", () => {
         body: { newBalance: { from: 150, to: 100 } },
       };
 
+      const spyOnLogTransaction = jest.spyOn(EnvelopeTransaction, "create");
+
       const response = await request(app)
         .post(
           `/envelopes/${envelopes[0].id}/transfer-budget/${envelopes[1].id}`
@@ -297,6 +315,7 @@ describe("Envelope", () => {
 
       expect(response.status).toBe(expected.statusCode);
       expect(response.body).toMatchObject(expected.body);
+      expect(spyOnLogTransaction).toHaveBeenCalled();
     });
 
     it("throws error 400 if source envelope id is not a number", async () => {
@@ -341,12 +360,14 @@ describe("Envelope", () => {
           `/envelopes/${envelopes[0].id}/transfer-budget/${envelopes[1].id}`
         )
         .send(payload);
+      console.log(response.text);
 
       expect(response.status).toBe(expected.statusCode);
     });
 
     it("throws error 404 if the source envelope with given id not found", async () => {
-      await Envelope.truncate();
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
       const notExistEnvelopeId = 999;
       const expected = { statusCode: 404 };
 
@@ -360,7 +381,8 @@ describe("Envelope", () => {
     });
 
     it("throws error 404 if the destination envelope with given id not found", async () => {
-      await Envelope.truncate();
+      await EnvelopeTransaction.destroy({ truncate: true });
+      await Envelope.destroy({ truncate: { cascade: true } });
       const notExistEnvelopeId = 999;
       const expected = { statusCode: 404 };
 

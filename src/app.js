@@ -24,8 +24,11 @@ app.use("/healthcheck", (req, res, next) => {
 });
 
 const envelopesRouter = require("./routes/envelopes.routes");
+app.use("/envelopes", envelopesRouter);
 
-app.use("/envelopes", envelopesRouter); // envelope route
+const envelopeTransactionRouter = require("./routes/envelope-transactions.routes");
+app.use("/envelope-transactions", envelopeTransactionRouter);
+
 app.use((req, res, next) => {
   next(createError(404, "Route not found"));
 }); // route not found

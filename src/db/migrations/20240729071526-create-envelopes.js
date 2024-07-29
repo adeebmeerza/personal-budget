@@ -17,12 +17,17 @@ module.exports = {
       budget: {
         allowNull: false,
         type: Sequelize.DECIMAL(12, 2),
+        default: 0.0,
       },
       createdAt: {
+        allowNull: false,
         type: Sequelize.DATE,
+        field: "created_at",
       },
       updatedAt: {
+        allowNull: false,
         type: Sequelize.DATE,
+        field: "updated_at",
       },
     });
   },

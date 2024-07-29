@@ -1,8 +1,7 @@
 const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
-const Envelope = require("../db/models/envelopes.model");
-const db = require("../db/sequelize");
+const { sequelize, Envelope, EnvelopeTransaction } = require("../db/models");
 
 const validateData = (req, res, next) => {
   const payload = req.body;
@@ -83,7 +82,11 @@ const validateUpdateData = (req, res, next) => {
 
   if (payload.budget !== undefined && isNaN(payload.budget)) {
     errors.push("Budget must be a number.");
+  } else {
+    payload.budget = Number(payload.budget); // parse budget data
   }
+
+  req.body = payload.body;
 
   if (errors.length > 0) {
     return next(createError(400, { errors }));
@@ -114,7 +117,6 @@ envelopesRouter.delete("/:id", async (req, res, next) => {
 });
 
 /** Transfer route */
-
 const transferRouter = express.Router({ mergeParams: true });
 envelopesRouter.use("/:id/transfer-budget", transferRouter); // register transfer nested route in envelope route
 
@@ -125,7 +127,6 @@ transferRouter.param("toId", async (req, res, next, toId) => {
       return next(createError(400, "Invalid envelope id given"));
 
     const envelope = await Envelope.findByPk(numericId);
-    console.log(envelope);
 
     if (!envelope) {
       return next(createError(404, "Envelope not found"));
@@ -160,12 +161,13 @@ transferRouter.post(
   async (req, res, next) => {
     try {
       // subtract / add budget amount
+
       req.envelope.budget = req.envelope.budget - req.transferAmount;
       req.toEnvelope.budget = req.toEnvelope.budget + req.transferAmount;
 
-      const result = await db.transaction(async (t) => {
+      const result = await sequelize.transaction(async (t) => {
         const updatedSourceEnvelope = await Envelope.update(
-          { budget: req.envelope.budget },
+          { budget: Number(req.envelope.budget) },
           {
             where: { id: req.envelope.id },
             transaction: t,
@@ -173,12 +175,18 @@ transferRouter.post(
         );
 
         const updatedDestinationEnvelope = await Envelope.update(
-          { budget: req.toEnvelope.budget },
+          { budget: Number(req.toEnvelope.budget) },
           {
-            where: { id: req.envelope.id },
+            where: { id: req.toEnvelope.id },
             transaction: t,
           }
         );
+
+        await EnvelopeTransaction.create({
+          fromId: req.envelope.id,
+          toId: req.toEnvelope.id,
+          transferredAmount: req.transferAmount,
+        });
 
         return { updatedSourceEnvelope, updatedDestinationEnvelope };
       });
@@ -188,6 +196,7 @@ transferRouter.post(
         result.updatedDestinationEnvelope[0] > 0
       )
         res.json({
+          transferredAmount: req.transferAmount,
           newBalance: {
             from: req.envelope.budget,
             to: req.toEnvelope.budget,
