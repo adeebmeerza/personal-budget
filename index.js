@@ -1,6 +1,5 @@
-const app = require("./src/app");
-const sequelize = require("./src/db");
-const db = require("./src/db");
+const server = require("./src/app");
+const db = require("./src/db/sequelize");
 
 const PORT = process.env.PORT || 3000;
 
@@ -11,17 +10,17 @@ const bootstrap = async () => {
       "Connection to the database has been established successfully."
     );
 
-    const server = app.listen(PORT, () => {
+    const instance = server.listen(PORT, () => {
       console.log(`Server is listening on port ${PORT}`);
     });
 
     // Handle process termination signals
     process.on("SIGTERM", () => {
-      shutdown(server);
+      shutdown(instance);
     });
 
     process.on("SIGINT", () => {
-      shutdown(server);
+      shutdown(instance);
     });
   } catch (error) {
     console.error("Unable to connect to the database:", error);
@@ -29,10 +28,10 @@ const bootstrap = async () => {
   }
 };
 
-const shutdown = (server) => {
-  console.log("Received kill signal, shutting down gracefully.");
-  server.close(async () => {
-    await sequelize.close();
+const shutdown = (instance) => {
+  console.log("\n\nReceived kill signal, shutting down gracefully.");
+  instance.close(async () => {
+    await instance.close();
     console.log("Database disconnected.");
     console.log("HTTP server closed.");
     process.exit(0);

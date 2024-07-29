@@ -1,7 +1,7 @@
 const request = require("supertest");
-const app = require("../app");
-const Envelope = require("./envelopes.model");
-const sequelize = require("../db");
+const app = require("../src/app");
+const Envelope = require("../src/db/models/envelopes.model");
+const sequelize = require("../src/db/sequelize");
 
 describe("Envelope", () => {
   afterAll(async () => {

@@ -23,7 +23,7 @@ app.use("/healthcheck", (req, res, next) => {
   }
 });
 
-const envelopesRouter = require("./envelopes/envelopes.routes");
+const envelopesRouter = require("./routes/envelopes.routes");
 
 app.use("/envelopes", envelopesRouter); // envelope route
 app.use((req, res, next) => {

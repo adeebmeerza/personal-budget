@@ -1,5 +1,5 @@
-const { Sequelize, Model, DataTypes } = require("sequelize");
-const db = require("../db");
+const { DataTypes } = require("sequelize");
+const db = require("../sequelize");
 
 const Envelope = db.define("envelopes", {
   title: {

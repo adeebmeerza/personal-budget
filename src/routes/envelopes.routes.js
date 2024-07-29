@@ -1,8 +1,8 @@
 const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
-const Envelope = require("./envelopes.model");
-const db = require("../db");
+const Envelope = require("../db/models/envelopes.model");
+const db = require("../db/sequelize");
 
 const validateData = (req, res, next) => {
   const payload = req.body;
