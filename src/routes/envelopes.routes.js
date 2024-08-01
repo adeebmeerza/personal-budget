@@ -2,6 +2,7 @@ const express = require("express");
 const envelopesRouter = express.Router();
 const createError = require("http-errors");
 const { sequelize, Envelope, EnvelopeTransaction } = require("../db/models");
+const envelopeTransactionsRouter = require("./envelope-transactions.routes");
 
 const validateData = (req, res, next) => {
   const payload = req.body;
@@ -13,7 +14,7 @@ const validateData = (req, res, next) => {
     typeof payload.title !== "string" ||
     typeof payload.budget !== "number"
   )
-    next(createError(400));
+    next(createError(400, "Request body payload has invalid data"));
 
   req.body = {
     title: payload.title,
@@ -115,6 +116,8 @@ envelopesRouter.delete("/:id", async (req, res, next) => {
     next(error);
   }
 });
+
+envelopesRouter.use("/:id/transactions", envelopeTransactionsRouter); // register transactions routes
 
 /** Transfer route */
 const transferRouter = express.Router({ mergeParams: true });

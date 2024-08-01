@@ -1,10 +1,18 @@
 const request = require("supertest");
 const app = require("../src/app");
-const { Envelope } = require("../src/db/models");
-const { EnvelopeTransaction } = require("../src/db/models");
+const { Envelope, EnvelopeTransaction } = require("../src/db/models");
 const { sequelize } = require("../src/db/models");
 
 describe("Envelope", () => {
+  beforeAll(async () => {
+    try {
+      await sequelize.authenticate();
+      console.log("Connection has been established successfully.");
+    } catch (error) {
+      console.error("Error unable to connect to the database:", error);
+    }
+  });
+
   afterAll(async () => {
     await sequelize.close();
   });
@@ -62,7 +70,7 @@ describe("Envelope", () => {
 
     it("returns input validation error when budget input other than number", async () => {
       const modifiedPayload = { ...payload, budget: "123" };
-      const expected = { statusCode: 400, payload };
+      const expected = { statusCode: 400 };
 
       const response = await request(app)
         .post("/envelopes")
@@ -292,9 +300,7 @@ describe("Envelope", () => {
       try {
         await EnvelopeTransaction.destroy({ truncate: true });
         await Envelope.destroy({ truncate: { cascade: true } });
-      } catch (error) {
-        console.log(error);
-      }
+      } catch (error) {}
     });
 
     const payload = { transferAmount: 50 };
@@ -360,7 +366,6 @@ describe("Envelope", () => {
           `/envelopes/${envelopes[0].id}/transfer-budget/${envelopes[1].id}`
         )
         .send(payload);
-      console.log(response.text);
 
       expect(response.status).toBe(expected.statusCode);
     });
