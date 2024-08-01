@@ -35,7 +35,9 @@ app.use((req, res, next) => {
 
 // global error handler
 app.use((err, req, res, next) => {
-  console.error(err);
+  if (process.env.NODE_ENV !== "test") {
+    console.error(err);
+  }
 
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     return res.sendStatus(400); // Bad request

@@ -179,6 +179,40 @@ paths:
           description: Invalid envelope id given / Invalid to envelope id given / Transfer amount must be number / Insuffucient budget amount to transfer
         '404':
           description: Envelope not found / To envelope not found
+
+  /envelope-transactions:
+    get:
+      tags:
+        - envelope-transactions
+      summary: Envelope transactions logs
+      description: Logs of transfer transaction made between envelopes
+      parameters:
+        - name: toEnvelopeId
+          in: query
+          description: Id of destination envelope which a budget was transferred
+          schema:
+            type: integer
+            format: int64
+        - name: startDate
+          in: query
+          description: Filter transactions by created date (starting of date range). Must use together with endDate
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: Filter transactions by created date (ending of date range). Must use together with startDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Lists all transfer transactions
+          content: 
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Envelope Transaction'
+
 components:
   schemas:
     Envelope:
@@ -196,3 +230,19 @@ components:
           description: amount of money budgetted for this envelope
           format: decimal
           example: 10.00
+    Envelope Transaction:
+      type: object
+      properties:
+        fromId: 
+          type: integer
+          format: int64
+          example: 1
+        toId: 
+          type: integer
+          format: int64
+          example: 1
+        transferredAmount:
+          type: number
+          format: number
+          example: 200.00
+
